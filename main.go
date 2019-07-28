@@ -3,12 +3,18 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
 	"os"
 	"os/exec"
 	"time"
+)
+
+var (
+	configFile = flag.String("config-file", "config.json", "path to custom configuration file")
+	mazeFile   = flag.String("maze-file", "maze01.txt", "path to a custom maze file")
 )
 
 // Player is the player character \o/
@@ -42,7 +48,7 @@ type Config struct {
 var cfg Config
 
 func loadConfig() error {
-	f, err := os.Open("config.json")
+	f, err := os.Open(*configFile)
 	if err != nil {
 		return err
 	}
@@ -58,7 +64,7 @@ func loadConfig() error {
 }
 
 func loadMaze() error {
-	f, err := os.Open("maze01.txt")
+	f, err := os.Open(*mazeFile)
 	if err != nil {
 		return err
 	}
@@ -110,11 +116,9 @@ func printScreen() {
 		for _, chr := range line {
 			switch chr {
 			case '#':
-				fmt.Printf("\x1b[44m" + cfg.Wall + "\x1b[0m")
+				fmt.Printf(cfg.Wall)
 			case '.':
 				fmt.Printf(cfg.Dot)
-			case 'X':
-				fmt.Printf(cfg.Pill)
 			default:
 				fmt.Printf(cfg.Space)
 			}
@@ -204,9 +208,6 @@ func movePlayer(dir string) {
 		score++
 		// Remove dot from the maze
 		maze[player.row] = maze[player.row][0:player.col] + " " + maze[player.row][player.col+1:]
-	case 'X':
-		score += 10
-		maze[player.row] = maze[player.row][0:player.col] + " " + maze[player.row][player.col+1:]
 	}
 }
 
@@ -228,7 +229,7 @@ func moveGhosts() {
 	}
 }
 
-func init() {
+func initialize() {
 	cbTerm := exec.Command("/bin/stty", "cbreak", "-echo")
 	cbTerm.Stdin = os.Stdin
 
@@ -249,7 +250,10 @@ func cleanup() {
 }
 
 func main() {
+	flag.Parse()
+
 	// initialize game
+	initialize()
 	defer cleanup()
 
 	// load resources
